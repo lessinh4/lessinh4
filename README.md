@@ -50,3 +50,64 @@ for FASTQ in "$INPUT_DIR"/cleaned_*.fastq; do
         cat "${OUTPUT_DIR}/${SAMPLE}.log"
     fi
 done
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#RELATÓRIOS DE QUALIDADE SAMTOOLS E QUALIMAP
+#!/bin/bash
+# Configurações básicas modificáveis
+SAM_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/alignment_bowtie"
+OUTPUT_DIR="$SAM_DIR/quality_reports"
+mkdir -p "$OUTPUT_DIR"
+
+# Loop para processar cada arquivo .sam
+for SAM_FILE in "$SAM_DIR"/*.sam; do
+    SAMPLE=$(basename "$SAM_FILE" .sam)
+    echo "Processando $SAMPLE..."
+    
+    # 1. Converter SAM para BAM (formato binário)
+    samtools view -Sb "$SAM_FILE" > "$OUTPUT_DIR/${SAMPLE}.bam"
+    
+    # 2. Ordenar BAM (necessário para estatísticas)
+    samtools sort "$OUTPUT_DIR/${SAMPLE}.bam" -o "$OUTPUT_DIR/${SAMPLE}.sorted.bam"
+    
+    # 3. Gerar estatísticas básicas (flagstat)
+    samtools flagstat "$OUTPUT_DIR/${SAMPLE}.sorted.bam" > "$OUTPUT_DIR/${SAMPLE}_flagstat.txt"
+    
+    echo "✅ $SAMPLE: Conversão e flagstat concluídos!"
+done
+
+echo "Análise finalizada! Verifique os arquivos em $OUTPUT_DIR"
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#GERANDO MATRIZ DE CONTAGEM FEATURE COUNTS miRNA SINGLE END
+#!/bin/bash
+# Ativa o ambiente Conda se necessário
+# source activate bioconda_env  # Descomente se estiver fora do ambiente
+
+# Caminhos (MODIFICAR QUANDO FOR USAR)
+BAM_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/quality_reports/bam_files"
+ANNOTATION="/home/pablooliveira/projects/Alana/hsa.gff3"
+OUT_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/counts_matrix"
+POST_MATRIX_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/quality_reports/post_matrix"
+
+# Garante que diretórios existem
+mkdir -p "$OUT_DIR"
+mkdir -p "$POST_MATRIX_DIR"
+
+# Coleta todos os arquivos *.sorted.bam
+BAM_FILES=$(ls $BAM_DIR/*sorted.bam)
+
+# Roda featureCounts
+featureCounts \
+  -T 8 \
+  -t miRNA \
+  -g Name \
+  -a "$ANNOTATION" \
+  -o "$OUT_DIR/matrix_counts.txt" \
+  $BAM_FILES
+
+# Checa se houve sucesso
+if [ $? -eq 0 ]; then
+  echo "Contagem gerada com sucesso em $OUT_DIR/matrix_counts.txt"
+else
+  echo "Erro ao executar featureCounts" >&2
+fi
