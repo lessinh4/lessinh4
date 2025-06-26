@@ -26,3 +26,36 @@ fastp -i in.fq -o out.fq
 
 #análise de sequência super-representada
 --overrepresentation_sampling-P 100-P 1
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#ALINHAMENTO COM BOWTIE
+#É PRECISO MODIFICAR OS DIRETÓRIOS INPUT E OUTPUT
+
+#!/bin/bash
+
+INPUT_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/filtering_fastp"
+REF_INDEX="/home/pablooliveira/projects/Alana/genome/Homo_sapiens.GRCh38.dna.toplevel"
+OUTPUT_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/alignment_bowtie"
+THREADS=4
+
+mkdir -p "$OUTPUT_DIR"
+
+for FASTQ in "$INPUT_DIR"/cleaned_*.fastq; do
+    SAMPLE=$(basename "$FASTQ" .fastq)
+    echo "Processando $SAMPLE..."
+    
+    bowtie -x "$REF_INDEX" \
+           -n 0 -l 18 -v 2 \
+           --best -k 1 \
+           -p "$THREADS" \
+           -S \
+           "$FASTQ" \
+           > "${OUTPUT_DIR}/${SAMPLE}.sam" 2> "${OUTPUT_DIR}/${SAMPLE}.log"
+    
+    if [ -s "${OUTPUT_DIR}/${SAMPLE}.sam" ]; then
+        echo "✅ ${SAMPLE}.sam gerado com sucesso!"
+    else
+        echo "❌ Falha no alinhamento. Log:"
+        cat "${OUTPUT_DIR}/${SAMPLE}.log"
+    fi
+done
