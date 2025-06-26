@@ -1,9 +1,6 @@
 #SCRIPT PARA PRE PROCESSAMENTO DE DADOS BRUTOS MICRORNAS (SE)
 #FASTP PARA RETIRADA DE SEQUÊNCIAS DE BAIXA QUALIDADE, FILTRAGEM POR TAMANHO DAS SEQUÊNCIAS ASSUMINDO A DETECÇÃO AUTOMÁTICA DO FASTP
 
-#INSTALAR FASTP BIOCONDA
-conda install -c bioconda fastp
-
 #ENTRADA E SAÍDA DE DADOS
 -i / -in1
 -o/-out1
@@ -12,20 +9,14 @@ conda install -c bioconda fastp
 fastp -i in.fq -o out.fq
 
 --stdout
+-e, --average_qual 33 (Phred)  #média do score de qualidade (0,05 taxa de erro)
 
-#média do score de qualidade (0,05 taxa de erro)
--e, --average_qual 33 (Phred)
-
-#filtro de comprimento das reads
 --length_required  18
---length_limit 30
+--length_limit 30 #filtro de comprimento das reads
 
-#processamento de UMI
-#quando os dados possuem alto índice de duplicação
--U --umi_loc=read1
+-U --umi_loc=read1  #processamento de UMI. quando os dados possuem alto índice de duplicação
 
-#análise de sequência super-representada
---overrepresentation_sampling-P 100-P 1
+--overrepresentation_sampling-P 100-P 1   #análise de sequência super-representada
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #ALINHAMENTO COM BOWTIE
