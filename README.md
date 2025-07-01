@@ -99,6 +99,7 @@ BAM_FILES=$(ls $BAM_DIR/*sorted.bam)
 # Roda featureCounts
 featureCounts \
   -T 8 \
+  -M --primary \
   -t miRNA \
   -g Name \
   -a "$ANNOTATION" \
