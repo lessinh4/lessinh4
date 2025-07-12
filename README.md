@@ -8,8 +8,9 @@
 #USO SIMPLES
 fastp -i in.fq -o out.fq
 
---stdout
+
 -e, --average_qual 33 (Phred)  #média do score de qualidade (0,05 taxa de erro)
+--stdout
 
 --length_required  18
 --length_limit 30 #filtro de comprimento das reads
