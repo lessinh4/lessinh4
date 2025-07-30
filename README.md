@@ -1,25 +1,74 @@
 #SCRIPT PARA PRE PROCESSAMENTO DE DADOS BRUTOS MICRORNAS (SE)
+__________________________________________________________________________________________________________________________________________________________________________________________
 #FASTP PARA RETIRADA DE SEQUÊNCIAS DE BAIXA QUALIDADE, FILTRAGEM POR TAMANHO DAS SEQUÊNCIAS ASSUMINDO A DETECÇÃO AUTOMÁTICA DO FASTP
+#!/bin/bash
 
-#ENTRADA E SAÍDA DE DADOS
--i / -in1
--o/-out1
+# Define os diretórios de entrada, saída e relatórios (PODEM SER MODIFICADOS)
+INPUT_DIR="/home/pablooliveira/projects/Alana/GSE166160/"
+OUTPUT_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/filtrados"
+REPORTS_DIR="/home/pablooliveira/projects/Alana/GSE166160/preprocessing_data/filtrados/relatorios"
 
-#USO SIMPLES
-fastp -i in.fq -o out.fq
+# Define o número de threads (núcleos de CPU) para o fastp
+THREADS=4
 
+# --- Início da Execução do Script ---
 
--e, --average_qual 33 (Phred)  #média do score de qualidade (0,05 taxa de erro)
---stdout
+echo "Iniciando o script de pré-processamento de FASTQ com fastp (saída descompactada)..."
 
---length_required  18
---length_limit 30 #filtro de comprimento das reads
+# Cria os diretórios de saída e relatórios se eles não existirem
+echo "Criando diretórios de saída se não existirem..."
+mkdir -p "$OUTPUT_DIR"
+mkdir -p "$REPORTS_DIR"
+echo "Diretórios criados: $OUTPUT_DIR e $REPORTS_DIR"
+echo ""
 
--U --umi_loc=read1  #processamento de UMI. quando os dados possuem alto índice de duplicação
+# Habilita o nullglob para evitar erros se não houver arquivos correspondentes
+shopt -s nullglob
+fastq_files=("$INPUT_DIR"/*.fastq* "$INPUT_DIR"/*.fq*)
+shopt -u nullglob
 
---overrepresentation_sampling-P 100-P 1   #análise de sequência super-representada
+# Verifica se algum arquivo FASTQ foi encontrado
+if [ ${#fastq_files[@]} -eq 0 ]; then
+    echo "❌ Erro: Nenhum arquivo FASTQ encontrado em '$INPUT_DIR'."
+    exit 1
+fi
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+echo "Iniciando o pré-processamento dos arquivos single-end com fastp..."
+echo "Configurações de fastp:"
+echo "  - Saída descompactada (.fastq)"
+echo "  - Qualidade mínima (Phred): 33"
+echo "  - Comprimento da read: 18-30bp (ideal para miRNAs)"
+echo "  - Threads: $THREADS"
+echo ""
+
+# Loop através de cada arquivo FASTQ
+for fastq_file in "${fastq_files[@]}"
+do
+    echo "--- Processando arquivo: $(basename "$fastq_file") ---"
+
+    # Extrai o nome base do arquivo (sem extensões)
+    base_name=$(basename "$fastq_file")
+    base_name="${base_name%.gz}"
+    base_name="${base_name%.fastq}"
+    base_name="${base_name%.fq}"
+
+    # Comando fastp:
+   fastp -i "$fastq_file" -o "$OUTPUT_DIR/${base_name}_cleaned.fastq" -h "$REPORTS_DIR/${base_name}.html" -j "$REPORTS_DIR/${base_name}.json" -e 33 --length_required 18 --length_limit 30 -p -w "$THREADS"
+
+    # Verifica o status de saída do fastp
+    if [ $? -eq 0 ]; then
+        echo "✅ Pré-processamento de '${base_name}' concluído! Arquivo descompactado gerado: ${base_name}_cleaned.fastq"
+    else
+        echo "❌ Erro no processamento de '${base_name}'."
+    fi
+    echo ""
+done
+
+echo "🎉 Todos os arquivos foram processados."
+echo "Arquivos descompactados em: $OUTPUT_DIR"
+echo "Relatórios em: $REPORTS_DIR"
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #ALINHAMENTO COM BOWTIE
 #É PRECISO MODIFICAR OS DIRETÓRIOS INPUT E OUTPUT
 
